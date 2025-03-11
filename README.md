@@ -53,25 +53,3 @@ RAGBase implements three specialized retrieval agents:
 
 Each agent can operate independently or in concert, with the system automatically determining which knowledge sources are most relevant to each query.
 
-
-About the Author
-
-Jason Zhou is a seasoned software engineer with experience at leading tech companies including Pinterest and Walmart Labs3. With a background in search engine technology and data pipeline development, Jason created RAGBase to solve common challenges in building reliable, accurate RAG systems for production environments.
-License
-
-RAGBase is released under the MIT License. See the LICENSE file for details.
-Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-    Fork the repository
-
-    Create your feature branch (git checkout -b feature/amazing-feature)
-
-    Commit your changes (git commit -m 'Add some amazing feature')
-
-    Push to the branch (git push origin feature/amazing-feature)
-
-    Open a Pull Request
-
-For more information, visit our documentation or contact the author at jason.zhou@example.com.# RAGBase
