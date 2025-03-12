@@ -6,16 +6,19 @@ from tqdm import tqdm  # For progress bars
 
 # Configuration
 FOLDER_PATH = 'chrono'
-ALLOWED_EXTENSIONS = ['.cpp', '.hpp', '.py', '.md']
+CODE_EXTENSIONS = ['.cpp', '.hpp', '.py']
+DOC_EXTENSIONS = ['.md']
+ALLOWED_EXTENSIONS = CODE_EXTENSIONS + DOC_EXTENSIONS
 OUTPUT_DIR = 'generated_embeddings'
-MODEL_NAME = "all-MiniLM-L6-v2"
+CODE_MODEL = "microsoft/codebert-base"  # For code files
+DOC_MODEL = "sentence-transformers/all-mpnet-base-v2"  # For documentation files
 BATCH_SIZE = 32  # For embedding generation
 
 # Create output directory if it doesn't exist
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def load_codebase(folder_path, allowed_extensions):
-    """Load code snippets from the codebase."""
+    """Load code snippets from the codebase with file type annotations."""
     snippets = []
     print("Loading codebase...")
     
@@ -37,65 +40,131 @@ def load_codebase(folder_path, allowed_extensions):
                 
                 # Only add non-empty files
                 if content.strip():
-                    snippets.append({"file": file_path, "content": content})
+                    # Determine file type based on extension
+                    file_ext = os.path.splitext(file)[1]
+                    file_type = "code" if file_ext in CODE_EXTENSIONS else "doc"
+                    snippets.append({
+                        "file": file_path, 
+                        "content": content, 
+                        "type": file_type
+                    })
     
     return snippets
 
-def generate_embeddings(snippets, model_name, batch_size=32):
-    """Generate embeddings for code snippets."""
-    print(f"Generating embeddings using {model_name}...")
+def generate_code_embeddings(code_snippets):
+    """Generate embeddings for code snippets using SFR-Embedding-Code model."""
+    print(f"Generating code embeddings using {CODE_MODEL}...")
     
-    # Initialize the embedding model
-    encoder = SentenceTransformer(model_name)
+    # Initialize the SFR-Embedding-Code model
+    encoder = SentenceTransformer(CODE_MODEL, trust_remote_code=True)
     
     # Extract text content for embedding
-    texts = [snippet["content"] for snippet in snippets]
+    texts = [snippet["content"] for snippet in code_snippets]
     
     # Generate embeddings in batches with progress bar
     embeddings = []
-    for i in tqdm(range(0, len(texts), batch_size)):
-        batch_texts = texts[i:i+batch_size]
-        batch_embeddings = encoder.encode(batch_texts)
+    for i in tqdm(range(0, len(texts), BATCH_SIZE)):
+        batch_texts = texts[i:i+BATCH_SIZE]
+        # For SFR-Embedding-Code, we don't need a special prompt for code
+        batch_embeddings = encoder.encode(
+            batch_texts,
+            normalize_embeddings=True,
+            show_progress_bar=False
+        )
         embeddings.extend(batch_embeddings)
     
     return np.array(embeddings), encoder.get_sentence_embedding_dimension()
 
-def save_data(snippets, embeddings, embedding_dim):
+def generate_doc_embeddings(doc_snippets):
+    """Generate embeddings for documentation using selected model."""
+    print(f"Generating documentation embeddings using {DOC_MODEL}...")
+    
+    # Initialize the model for documentation
+    encoder = SentenceTransformer(DOC_MODEL)
+    
+    # Extract text content for embedding
+    texts = [snippet["content"] for snippet in doc_snippets]
+    
+    # Generate embeddings in batches with progress bar
+    embeddings = []
+    for i in tqdm(range(0, len(texts), BATCH_SIZE)):
+        batch_texts = texts[i:i+BATCH_SIZE]
+        batch_embeddings = encoder.encode(
+            batch_texts,
+            normalize_embeddings=True,  # For better similarity calculations
+            show_progress_bar=False
+        )
+        embeddings.extend(batch_embeddings)
+    
+    return np.array(embeddings), encoder.get_sentence_embedding_dimension()
+
+def save_data(snippets_by_type, embeddings_by_type, metadata):
     """Save snippets, embeddings, and metadata to disk."""
     print(f"Saving data to {OUTPUT_DIR}...")
     
-    # Save code snippets
-    with open(os.path.join(OUTPUT_DIR, 'code_snippets.pkl'), 'wb') as f:
-        pickle.dump(snippets, f)
+    # Save all snippets
+    with open(os.path.join(OUTPUT_DIR, 'snippets.pkl'), 'wb') as f:
+        pickle.dump({
+            'code': snippets_by_type['code'],
+            'doc': snippets_by_type['doc']
+        }, f)
     
-    # Save embeddings as numpy array
-    np.save(os.path.join(OUTPUT_DIR, 'embeddings.npy'), embeddings)
+    # Save code embeddings
+    np.save(os.path.join(OUTPUT_DIR, 'code_embeddings.npy'), embeddings_by_type['code'])
     
-    # Save metadata (embedding dimension, model name, etc.)
-    metadata = {
-        'embedding_dim': embedding_dim,
-        'model_name': MODEL_NAME,
-        'num_snippets': len(snippets),
-        'allowed_extensions': ALLOWED_EXTENSIONS
-    }
+    # Save doc embeddings
+    np.save(os.path.join(OUTPUT_DIR, 'doc_embeddings.npy'), embeddings_by_type['doc'])
     
+    # Save metadata
     with open(os.path.join(OUTPUT_DIR, 'metadata.pkl'), 'wb') as f:
         pickle.dump(metadata, f)
     
-    print(f"Successfully saved {len(snippets)} code snippets and their embeddings.")
-    print(f"Embedding dimension: {embedding_dim}")
+    total_snippets = len(snippets_by_type['code']) + len(snippets_by_type['doc'])
+    print(f"Successfully saved {total_snippets} snippets and their embeddings.")
+    print(f"Code embedding dimension: {metadata['code_dim']}")
+    print(f"Doc embedding dimension: {metadata['doc_dim']}")
 
 def main():
     # Load code snippets
-    code_snippets = load_codebase(FOLDER_PATH, ALLOWED_EXTENSIONS)
-    print(f"Loaded {len(code_snippets)} code snippets.")
+    all_snippets = load_codebase(FOLDER_PATH, ALLOWED_EXTENSIONS)
+    print(f"Loaded {len(all_snippets)} snippets.")
     
-    # Generate embeddings
-    embeddings, embedding_dim = generate_embeddings(code_snippets, MODEL_NAME, BATCH_SIZE)
-    print(f"Generated embeddings of shape: {embeddings.shape}")
+    # Separate code and documentation snippets
+    code_snippets = [snippet for snippet in all_snippets if snippet["type"] == "code"]
+    doc_snippets = [snippet for snippet in all_snippets if snippet["type"] == "doc"]
+    
+    print(f"Found {len(code_snippets)} code files and {len(doc_snippets)} documentation files.")
+    
+    # Generate embeddings for each type
+    code_embeddings, code_dim = generate_code_embeddings(code_snippets)
+    doc_embeddings, doc_dim = generate_doc_embeddings(doc_snippets)
+    
+    print(f"Generated code embeddings shape: {code_embeddings.shape}")
+    print(f"Generated doc embeddings shape: {doc_embeddings.shape}")
+    
+    # Organize results by type
+    snippets_by_type = {
+        'code': code_snippets,
+        'doc': doc_snippets
+    }
+    
+    embeddings_by_type = {
+        'code': code_embeddings,
+        'doc': doc_embeddings
+    }
+    
+    # Create metadata
+    metadata = {
+        'code_model': CODE_MODEL,
+        'doc_model': DOC_MODEL,
+        'code_dim': code_dim,
+        'doc_dim': doc_dim,
+        'code_extensions': CODE_EXTENSIONS,
+        'doc_extensions': DOC_EXTENSIONS
+    }
     
     # Save data to disk
-    save_data(code_snippets, embeddings, embedding_dim)
+    save_data(snippets_by_type, embeddings_by_type, metadata)
 
 if __name__ == "__main__":
     main()

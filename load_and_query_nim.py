@@ -8,113 +8,193 @@ from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
 # Configuration
 EMBEDDINGS_DIR = 'generated_embeddings'
-COLLECTION_NAME = 'codebase_collection'
+COLLECTION_NAME_CODE = 'code_collection'
+COLLECTION_NAME_DOC = 'doc_collection'
 BATCH_SIZE = 100  # For Qdrant insertion
-MODEL_NAME = "meta/llama3-70b-instruct"  # NVIDIA LLM model
+MODEL_NAME = "deepseek-ai/deepseek-r1"  # NVIDIA LLM model
 
 def load_saved_data():
-    """Load previously generated embeddings and code snippets."""
+    """Load previously generated embeddings and snippets."""
     print(f"Loading data from {EMBEDDINGS_DIR}...")
     
-    # Load code snippets
-    with open(os.path.join(EMBEDDINGS_DIR, 'code_snippets.pkl'), 'rb') as f:
-        snippets = pickle.load(f)
+    # Load snippets
+    with open(os.path.join(EMBEDDINGS_DIR, 'snippets.pkl'), 'rb') as f:
+        snippets_by_type = pickle.load(f)
     
-    # Load embeddings
-    embeddings = np.load(os.path.join(EMBEDDINGS_DIR, 'embeddings.npy'))
+    # Load code embeddings
+    code_embeddings = np.load(os.path.join(EMBEDDINGS_DIR, 'code_embeddings.npy'))
+    
+    # Load doc embeddings
+    doc_embeddings = np.load(os.path.join(EMBEDDINGS_DIR, 'doc_embeddings.npy'))
     
     # Load metadata
     with open(os.path.join(EMBEDDINGS_DIR, 'metadata.pkl'), 'rb') as f:
         metadata = pickle.load(f)
     
-    print(f"Loaded {len(snippets)} code snippets and their embeddings.")
-    print(f"Embedding dimension: {metadata['embedding_dim']}")
+    code_snippets = snippets_by_type['code']
+    doc_snippets = snippets_by_type['doc']
     
-    return snippets, embeddings, metadata
+    print(f"Loaded {len(code_snippets)} code snippets and {len(doc_snippets)} documentation snippets.")
+    print(f"Code embedding dimension: {metadata['code_dim']}")
+    print(f"Doc embedding dimension: {metadata['doc_dim']}")
+    
+    return snippets_by_type, {'code': code_embeddings, 'doc': doc_embeddings}, metadata
 
-def setup_qdrant(embedding_dim):
-    """Set up Qdrant client and collection."""
+def setup_qdrant(metadata):
+    """Set up Qdrant client and collections for code and documentation."""
     print("Setting up Qdrant...")
     
     # Initialize Qdrant client
     client = QdrantClient(host="localhost", port=6333)
     
-    # Check if collection exists and recreate it
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(COLLECTION_NAME)
-        print(f"Deleted existing collection '{COLLECTION_NAME}'.")
+    # Setup code collection
+    if client.collection_exists(COLLECTION_NAME_CODE):
+        client.delete_collection(COLLECTION_NAME_CODE)
+        print(f"Deleted existing collection '{COLLECTION_NAME_CODE}'.")
     
-    # Create new collection
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=COLLECTION_NAME_CODE,
         vectors_config=VectorParams(
-            size=embedding_dim,
+            size=metadata['code_dim'],
             distance=Distance.COSINE,
         )
     )
-    print(f"Created new collection '{COLLECTION_NAME}'.")
+    print(f"Created new collection '{COLLECTION_NAME_CODE}'.")
+    
+    # Setup documentation collection
+    if client.collection_exists(COLLECTION_NAME_DOC):
+        client.delete_collection(COLLECTION_NAME_DOC)
+        print(f"Deleted existing collection '{COLLECTION_NAME_DOC}'.")
+    
+    client.create_collection(
+        collection_name=COLLECTION_NAME_DOC,
+        vectors_config=VectorParams(
+            size=metadata['doc_dim'],
+            distance=Distance.COSINE,
+        )
+    )
+    print(f"Created new collection '{COLLECTION_NAME_DOC}'.")
     
     return client
 
-def insert_embeddings(client, snippets, embeddings, batch_size=100):
+def insert_embeddings(client, snippets_by_type, embeddings_by_type, batch_size=100):
     """Insert embeddings into Qdrant in batches."""
-    print("Inserting embeddings into Qdrant...")
+    print("Inserting code embeddings into Qdrant...")
     
-    for i in range(0, len(snippets), batch_size):
-        batch_snippets = snippets[i:i+batch_size]
-        batch_embeddings = embeddings[i:i+batch_size]
+    # Insert code embeddings
+    code_snippets = snippets_by_type['code']
+    code_embeddings = embeddings_by_type['code']
+    
+    for i in range(0, len(code_snippets), batch_size):
+        batch_snippets = code_snippets[i:i+batch_size]
+        batch_embeddings = code_embeddings[i:i+batch_size]
         
         points = [
             PointStruct(
                 id=i + idx,
                 vector=embedding.tolist(),
-                payload={"file": snippet["file"], "content": snippet["content"]}
+                payload={"file": snippet["file"], "content": snippet["content"], "type": "code"}
             )
             for idx, (snippet, embedding) in enumerate(zip(batch_snippets, batch_embeddings))
         ]
         
-        client.upsert(collection_name=COLLECTION_NAME, points=points)
-        print(f"Inserted batch {i//batch_size + 1} ({len(points)} points).")
+        client.upsert(collection_name=COLLECTION_NAME_CODE, points=points)
+        print(f"Inserted code batch {i//batch_size + 1} ({len(points)} points).")
     
-    print("All embeddings inserted successfully.")
+    print("All code embeddings inserted successfully.")
+    
+    # Insert doc embeddings
+    print("Inserting documentation embeddings into Qdrant...")
+    doc_snippets = snippets_by_type['doc']
+    doc_embeddings = embeddings_by_type['doc']
+    
+    for i in range(0, len(doc_snippets), batch_size):
+        batch_snippets = doc_snippets[i:i+batch_size]
+        batch_embeddings = doc_embeddings[i:i+batch_size]
+        
+        points = [
+            PointStruct(
+                id=i + idx,
+                vector=embedding.tolist(),
+                payload={"file": snippet["file"], "content": snippet["content"], "type": "doc"}
+            )
+            for idx, (snippet, embedding) in enumerate(zip(batch_snippets, batch_embeddings))
+        ]
+        
+        client.upsert(collection_name=COLLECTION_NAME_DOC, points=points)
+        print(f"Inserted doc batch {i//batch_size + 1} ({len(points)} points).")
+    
+    print("All documentation embeddings inserted successfully.")
 
-def perform_query(client, query_text, model_name, limit=25):
-    """Perform a semantic search query and use ChatNVIDIA to generate an answer."""
+def perform_query(client, query_text, metadata, code_limit=15, doc_limit=5):
+    """Perform a semantic search query across both code and documentation collections."""
     print(f"Querying: '{query_text}'")
     
-    # Initialize the embedding model for the query
-    encoder = SentenceTransformer(model_name)
+    # Initialize the appropriate embedding models
+    code_encoder = SentenceTransformer(metadata['code_model'])
+    doc_encoder = SentenceTransformer(metadata['doc_model'])
     
-    # Generate embedding for the query
-    query_embedding = encoder.encode(query_text)
+    # Generate embeddings for the query using both models
+    code_query_embedding = code_encoder.encode(query_text, normalize_embeddings=True)
+    doc_query_embedding = doc_encoder.encode(query_text, normalize_embeddings=True)
     
-    # Perform query on Qdrant
-    search_results = client.query_points(
-        collection_name=COLLECTION_NAME,
-        query=query_embedding.tolist(),
-        limit=limit,
+    # Perform queries on both collections with increased limits
+    code_results = client.query_points(
+        collection_name=COLLECTION_NAME_CODE,
+        query=code_query_embedding.tolist(),
+        limit=code_limit,
+        with_payload=True
+    )
+    
+    doc_results = client.query_points(
+        collection_name=COLLECTION_NAME_DOC,
+        query=doc_query_embedding.tolist(),
+        limit=doc_limit,
         with_payload=True
     )
     
     # Prepare context from retrieved documents
-    context = "\n".join([point.payload["content"][:1000] for point in search_results.points])
+    context_parts = []
     
-    print("\nRetrieved Context:")
-    print(context)
+    # Add code results with full file context
+    print(f"\nRetrieved Code Files ({len(code_results.points)}):")
+    for i, point in enumerate(code_results.points):
+        file_path = point.payload["file"]
+        content = point.payload["content"]  # Include full file content
+        
+        # Format the context entry
+        context_entry = f"[CODE - {file_path}]\n{content}\n"
+        context_parts.append(context_entry)
+        print(f"{i+1}. {file_path} (similarity: {point.score:.4f})")
+    
+    # Add documentation results with full file context
+    print(f"\nRetrieved Documentation Files ({len(doc_results.points)}):")
+    for i, point in enumerate(doc_results.points):
+        file_path = point.payload["file"]
+        content = point.payload["content"]  # Include full file content
+        
+        # Format the context entry
+        context_entry = f"[DOC - {file_path}]\n{content}\n"
+        context_parts.append(context_entry)
+        print(f"{i+1}. {file_path} (similarity: {point.score:.4f})")
+    
+    context = "\n".join(context_parts)
     
     # Initialize ChatNVIDIA LLM
     llm = ChatNVIDIA(
-        model="deepseek-ai/deepseek-r1-distill-qwen-32b",
-        api_key="PASTE YOUR API KEY HERE", 
+        model=MODEL_NAME,
+        api_key="YOUR_API_KEY",
         temperature=0.6,
         top_p=0.7,
-        max_tokens=18192,
-        )
+        max_tokens=128000,
+    )
 
-    # Generate response using ChatNVIDIA
+    # Generate response using ChatNVIDIA with full context
     prompt_template = f"""
-        You are an assistant tasked with answering questions based on the provided context. Use the context below to answer the question concisely.
-
+        You are an assistant tasked with answering questions about a codebase. Use the provided context to answer the question concisely.
+        
+        The context includes both source code and documentation files. Pay attention to the type of each file (CODE or DOC).
+        
         Context:
         {context}
 
@@ -124,23 +204,23 @@ def perform_query(client, query_text, model_name, limit=25):
         Answer:
         """
     
-    print("Prompt:")
-    print(prompt_template)
-    
     response = llm.invoke(prompt_template)
     
     print("\nGenerated Answer:")
     print(response)
+    
+    return response
+
 
 def main():
     # Load saved data
-    snippets, embeddings, metadata = load_saved_data()
+    snippets_by_type, embeddings_by_type, metadata = load_saved_data()
     
     # Set up Qdrant
-    client = setup_qdrant(metadata['embedding_dim'])
+    client = setup_qdrant(metadata)
     
     # Insert embeddings into Qdrant
-    insert_embeddings(client, snippets, embeddings, BATCH_SIZE)
+    insert_embeddings(client, snippets_by_type, embeddings_by_type, BATCH_SIZE)
     
     # Interactive query loop with ChatNVIDIA integration
     while True:
@@ -148,7 +228,7 @@ def main():
         if query.lower() == 'exit':
             break
         
-        perform_query(client, query, metadata['model_name'], limit=5)
+        perform_query(client, query, metadata)
 
 if __name__ == "__main__":
     main()
