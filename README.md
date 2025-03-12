@@ -8,7 +8,7 @@ This codebase is designed and maintained by Json Zhou (zzhou292@wisc.edu).
 
 ## Overview
 
-RAGBase provides a modular, extensible solution for building RAG systems with multiple retrieval agents targeting different knowledge sources. By leveraging vector databases and optimized embeddings, RAGBase delivers highly relevant context to your LLM, resulting in more accurate, knowledge-grounded responses.
+RAGBase4Code provides a modular, extensible solution for building RAG systems with multiple retrieval agents targeting different knowledge sources. By leveraging vector databases and optimized embeddings, RAGBase delivers highly relevant context to your LLM, resulting in more accurate, knowledge-grounded responses.
 
 Yes, you can understand this as a backbone of a secured Cursor AI (https://www.cursor.com/) or Trae (https://www.trae.ai/).
 
@@ -53,7 +53,7 @@ RAGBase follows a modular architecture with separate components for:
 
 ## Retrieval Agents
 
-RAGBase implements three specialized retrieval agents:
+RAGBase4Code implements three specialized retrieval agents:
 
 - **Source Code Retriever**  
   Intelligently navigates codebases to extract relevant functions, classes, and implementation details. Optimized for understanding code semantics beyond simple keyword matching.
