@@ -10,6 +10,8 @@ This codebase is designed and maintained by Json Zhou (zzhou292@wisc.edu).
 
 RAGBase provides a modular, extensible solution for building RAG systems with multiple retrieval agents targeting different knowledge sources. By leveraging vector databases and optimized embeddings, RAGBase delivers highly relevant context to your LLM, resulting in more accurate, knowledge-grounded responses.
 
+Yes, you can understand this as a backbone of a secured Cursor AI (https://www.cursor.com/) or Trae (https://www.trae.ai/).
+
 ### System Phases
 
 - **Data Preparation & Indexing**  
