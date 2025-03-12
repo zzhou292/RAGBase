@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 from tqdm import tqdm  # For progress bars
 
 # Configuration
-FOLDER_PATH = 'chrono'
+FOLDER_PATH = 'example_codebase/chrono'
 CODE_EXTENSIONS = ['.cpp', '.hpp', '.py']
 DOC_EXTENSIONS = ['.md']
 ALLOWED_EXTENSIONS = CODE_EXTENSIONS + DOC_EXTENSIONS
