@@ -75,7 +75,10 @@ Install the Sentence Transformers library using pip:'pip install -U sentence-tra
 
 - **Qdrant (via Docker, for vector storage and similarity search):**  
 Make sure Docker is installed and running on your system. Then launch Qdrant in the background with:
-'docker run -p 6333:6333 -p 6334:6334 -v "${PWD}/qdrant_storage:/qdrant/storage:z" qdrant/qdrant'
+
+  ```
+docker run -p 6333:6333 -p 6334:6334 -v "${PWD}/qdrant_storage:/qdrant/storage:z" qdrant/qdrant
+  ```
 
 This command ensures that Qdrant runs with persistent storage mapped to the `qdrant_storage` directory in your current path.
 
@@ -83,9 +86,9 @@ This command ensures that Qdrant runs with persistent storage mapped to the `qdr
 
 1. **Generate Embeddings:**  
  Run the script to process your data and generate vector embeddings:
-
+  ```
 python generate_embeddings.py
-
+  ```
 2. **Query the System:**  
 After generating embeddings, choose the appropriate script based on your LLM interface:  
 - For NVIDIA NIM services:
