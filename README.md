@@ -4,7 +4,7 @@ _A advanced Retrieval Augmented Generation framework designed to enhance your AI
 
 # Author
 
-This codebase is designed and maintained by Json Zhou (zzhou292@wisc.edu)
+This codebase is designed and maintained by Json Zhou (zzhou292@wisc.edu).
 
 ## Overview
 
@@ -61,4 +61,43 @@ RAGBase implements three specialized retrieval agents:
   Maintains and indexes past interactions, allowing the system to reference previous questions and answers for improved context awareness and continuity.
 
 Each agent can operate independently or together, with the system dynamically determining which knowledge sources are most relevant for each query.
+
+## Instructions
+
+### Prerequisites & Installations
+
+- **Ollama (for local LLM deployment):**  
+  • If you have not already installed Ollama, download the appropriate installer from the [official Ollama website](https://ollama.com).  
+  • After installing, you can start the background service with: 'ollama serve'(You may adjust or disable autostart settings based on your preferences.)
+
+- **Sentence Transformers (for generating embeddings):**  
+Install the Sentence Transformers library using pip:'pip install -U sentence-transformers'
+
+- **Qdrant (via Docker, for vector storage and similarity search):**  
+Make sure Docker is installed and running on your system. Then launch Qdrant in the background with:
+'docker run -p 6333:6333 -p 6334:6334 -v "${PWD}/qdrant_storage:/qdrant/storage:z" qdrant/qdrant'
+
+This command ensures that Qdrant runs with persistent storage mapped to the `qdrant_storage` directory in your current path.
+
+### Running the Pipeline
+
+1. **Generate Embeddings:**  
+ Run the script to process your data and generate vector embeddings:
+
+python generate_embeddings.py
+
+2. **Query the System:**  
+After generating embeddings, choose the appropriate script based on your LLM interface:  
+- For NVIDIA NIM services:
+  ```
+  python load_and_query_nim.py
+  ```
+- For local Ollama deployment:
+  ```
+  python load_and_query_ollama.py
+  ```
+
+Follow these steps sequentially to set up your environment and execute the full RAG pipeline.
+
+  
 
