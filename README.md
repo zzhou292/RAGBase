@@ -2,6 +2,9 @@
 
 _A advanced Retrieval Augmented Generation framework designed to enhance your AI applications with multi-source knowledge retrieval. Specifically designed for offline LLM4CODE, aiming to provide codebase understanding offline and securely._
 
+![Framework Drawings](doc/images/drawing.png)
+
+
 # Author
 
 This codebase is designed and maintained by Json Zhou (zzhou292@wisc.edu).
