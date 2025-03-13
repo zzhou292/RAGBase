@@ -52,9 +52,6 @@
         <mxCell id="APF-IzaDfq1UEdPnOMEU-23" value="&lt;div&gt;&lt;b&gt;&lt;font data-font-src=&quot;https://fonts.googleapis.com/css?family=Rock+Salt&quot; face=&quot;Rock Salt&quot;&gt;DOC EMBEDDINGS&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;font data-font-src=&quot;https://fonts.googleapis.com/css?family=Rock+Salt&quot; face=&quot;Rock Salt&quot;&gt;(sentence-transformers/all-mpnet-base-v2,&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font data-font-src=&quot;https://fonts.googleapis.com/css?family=Rock+Salt&quot; face=&quot;Rock Salt&quot;&gt;sentence-transformers/all-minilml6v2&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font data-font-src=&quot;https://fonts.googleapis.com/css?family=Rock+Salt&quot; face=&quot;Rock Salt&quot;&gt;...)&lt;/font&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
           <mxGeometry x="440" y="805" width="360" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="APF-IzaDfq1UEdPnOMEU-26" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=https://static.vecteezy.com/system/resources/previews/025/408/684/non_2x/search-engine-icon-magnifying-glass-with-search-bar-line-icon-style-design-simple-design-editable-vector.jpg;" parent="1" vertex="1">
-          <mxGeometry x="784.5" y="480" width="275.5" height="183.67" as="geometry" />
-        </mxCell>
         <mxCell id="APF-IzaDfq1UEdPnOMEU-27" value="&lt;div&gt;&lt;font data-font-src=&quot;https://fonts.googleapis.com/css?family=Rock+Salt&quot; face=&quot;Rock Salt&quot;&gt;&lt;b&gt;QDRANT-CLIENT&lt;/b&gt;&amp;nbsp;&amp;nbsp;&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font data-font-src=&quot;https://fonts.googleapis.com/css?family=Rock+Salt&quot; face=&quot;Rock Salt&quot;&gt;VECTOR&amp;nbsp; SEARCH&amp;nbsp; ENGINE&lt;/font&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
           <mxGeometry x="807.25" y="645" width="230" height="50" as="geometry" />
         </mxCell>
@@ -114,6 +111,9 @@
         </mxCell>
         <mxCell id="i8-DNUQycYjsJAC2yAEo-4" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=https://cdn1.iconfinder.com/data/icons/ai-image-generator/512/ai-image-generator-16-512.png;" vertex="1" parent="1">
           <mxGeometry x="582.43" y="356.57" width="126.86" height="126.86" as="geometry" />
+        </mxCell>
+        <mxCell id="i8-DNUQycYjsJAC2yAEo-7" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=https://e7.pngegg.com/pngimages/931/769/png-clipart-database-icon-database-free-blue-background-blue-angle-thumbnail.png;" vertex="1" parent="1">
+          <mxGeometry x="838.25" y="477" width="168" height="168" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
